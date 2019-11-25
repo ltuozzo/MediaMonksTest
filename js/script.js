@@ -1,37 +1,47 @@
-
-//The board variable will be filled with the pieces info, including a value. Victory will be achieved if the values of the array are sorted correctly.
 var board = [[],[],[],[]];
-var emptyRow = 3;
-var emptyColumn = 3;
+var emptyPiece = {
+    row : 3,
+    column : 3
+}
 
-function createPieces() {
-    var k = 0;
-    for (i = 0; i < 4; i++) {
-        for (j = 0; j < 4; j++) {
-            var hor = -125 * j;
-            var ver = -125 * i;
-            var div = document.createElement("div");
-            div.style.backgroundPosition = hor + "px " + ver + "px";
-            div.className = "pieces";
-            div.id = k;
+class Piece {
+    constructor(pieceValue, pieceRow, pieceColumn) {
+        this.value = pieceValue;
 
-            //Fill the board
-            var pieceInfo = {
-                value: k,
-                row: i,
-                column: j
-            };
-            board[i].push(pieceInfo);
-
-            document.getElementById("puzzle").appendChild(div);
-            createEventListener(div);
-            k++;
+        if (pieceRow != 3 || pieceColumn != 3) {
+            this.createPieceHtml(pieceValue, pieceRow, pieceColumn);
         }
     }
 
-    createBackground();
+    createPieceHtml(pieceValue, pieceRow, pieceColumn) {
+        let hor = -125 * pieceColumn;
+        let ver = -125 * pieceRow;
+        let div = document.createElement("div");
 
-    document.getElementById("15").style.background = 'none';    
+        div.style.backgroundPosition = hor + "px " + ver + "px";
+        div.style.transition = 'left 0.5s, top 0.5s';
+        div.style.position = 'absolute';
+        div.style.left = -(hor) + "px";
+        div.style.top = -(ver) + "px";
+        div.className = "pieces";
+        div.id = pieceValue;
+        div.addEventListener("click", function() {
+            movePiece(this.id, false)
+        });
+
+        document.getElementById("puzzle").appendChild(div);
+    }
+}
+
+function createPieces() {
+    let k = 0;
+    for (i = 0; i < 4; i++) {
+        for (j = 0; j < 4; j++) {
+            let piece = new Piece(k, i, j);
+            board[i].push(piece);
+            k++;
+        }
+    }    
 }
 
 function createEventListener(div) {
@@ -47,12 +57,12 @@ function createBackground(){
 }
 
 function movePiece(id, shuffling){
-    var clickedPiece = findPiece(id);
+    const clickedPiece = findPiece(id);
     if(legalMove(clickedPiece.row, clickedPiece.column)){
-        exchangePosition(clickedPiece.row, clickedPiece.column, emptyRow, emptyColumn);
+        movePiecePosition(id);
         updateEmptyPiece(clickedPiece.row, clickedPiece.column);
     }
-    var endGame = checkIfCompleted();
+    const endGame = checkIfCompleted();
     if (endGame && !shuffling){
         showVictoryScreen();
     }
@@ -62,7 +72,7 @@ function findPiece(id){
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 4; j++) {
             if (board[i][j].value == id){
-                var res = {
+                const res = {
                     row: i,
                     column: j
                 }
@@ -73,47 +83,30 @@ function findPiece(id){
 }
 
 function legalMove(row, column) {
-    var adjacentRow = row - emptyRow;
-    var adjacentColumn = column - emptyColumn;
+    const adjacentRow = row - emptyPiece.row;
+    const adjacentColumn = column - emptyPiece.column;
     if((((adjacentRow == 1) || (adjacentRow == -1)) && adjacentColumn == 0) || (((adjacentColumn == 1) || (adjacentColumn == -1)) && adjacentRow == 0)){
       return true;
     }
     return false;
 }
 
-function exchangePosition(row1, column1, row2, column2) {
-    var piece1 = board[row1][column1].value;
-    var piece2 = board[row2][column2].value;
-  
-    exchangeValuePosition(row1, column1, row2, column2);
-    exchangeDOMPosition(piece1, piece2);
-}
+function movePiecePosition(id) {
+    board[emptyPiece.row][emptyPiece.column].value = id;
 
-function exchangeValuePosition(rowPos1, columnPos1, rowPos2, columnPos2) {
-    var prevVal = board[rowPos1][columnPos1].value;
-    board[rowPos1][columnPos1].value = board[rowPos2][columnPos2].value;
-    board[rowPos2][columnPos2].value = prevVal;
-}
-
-function exchangeDOMPosition(idPiece1, idPiece2) {
-    var elementPiece1 = document.getElementById(idPiece1);
-    var elementPiece2 = document.getElementById(idPiece2);
-  
-    var parentPiece = elementPiece1.parentNode;
-  
-    var cloneElement1 = elementPiece1.cloneNode(true);
-    var cloneElement2 = elementPiece2.cloneNode(true);
-  
-    parentPiece.replaceChild(cloneElement1, elementPiece2);
-    parentPiece.replaceChild(cloneElement2, elementPiece1);
-
-    //The event listener gets deleted when we replace the nodes, so we create a new one.
-    createEventListener(cloneElement1);
+    const movePiece = document.getElementById(id);
+    const newLeftDist = 125 * emptyPiece.column;
+    const newTopDist = 125 * emptyPiece.row;
+    
+    movePiece.style.left = newLeftDist + 'px';
+    movePiece.style.top = newTopDist + 'px';
 }
 
 function updateEmptyPiece(newRow, newColumn) {
-    emptyRow = newRow;
-    emptyColumn = newColumn;
+    emptyPiece.row = newRow;
+    emptyPiece.column = newColumn;
+
+    board[newRow][newColumn].value = 15;
 }
 
 function checkIfCompleted() {
@@ -158,7 +151,7 @@ function shufflePieces(times) {
       return;
     }
 
-    var direction = Math.floor(Math.random()*16);
+    var direction = Math.floor(Math.random()*15);
     movePiece(direction, true);
   
     shufflePieces(times - 1);
@@ -166,6 +159,7 @@ function shufflePieces(times) {
 
 function start() {
     createPieces();
+    createBackground();
     shufflePieces(500);
 }
 
